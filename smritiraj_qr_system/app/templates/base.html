@@ -3,25 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}Smriti Raj Dentistry{% endblock %}</title>
+  <title>{% block title %}Smriti Raj Dentistry{% endblock %} · Dentistry Ops</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/cursor.css">
 </head>
-<body>
+<body class="{% if request.session.get('user') %}portal-body{% else %}login-body{% endif %}">
 {% if request.session.get("user") %}
-<header class="topbar">
-  <div class="brand">SMRITI RAJ <span>DENTISTRY</span></div>
-  <nav>
-    <a href="/">Dashboard</a>
-    <a href="/patients">Patients</a>
-    <a href="/offers">Offers</a>
-    <a href="/validate">Scan / Validate QR</a>
-    <form method="post" action="/logout" class="inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token(request) }}"><button class="linkbtn">Logout</button></form>
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/" aria-label="Smriti Raj Dentistry dashboard">
+    <span class="brand-mark">◆</span><span><b>Smriti Raj</b><small>Dentistry Ops</small></span>
+  </a>
+  <a class="btn primary register-cta" href="/patients/register">＋ Register Patient</a>
+  <nav class="side-nav" aria-label="Main navigation">
+    <a class="{% if request.url.path == '/' %}active{% endif %}" href="/"><span>⌂</span>Dashboard</a>
+    <a class="{% if request.url.path.startswith('/patients') %}active{% endif %}" href="/patients"><span>♙</span>Patients</a>
+    <a class="{% if request.url.path.startswith('/offers') %}active{% endif %}" href="/offers"><span>◇</span>Offers</a>
+    <a class="{% if request.url.path.startswith('/validate') %}active{% endif %}" href="/validate"><span>▣</span>Scan QR</a>
   </nav>
+  <form method="post" action="/logout" class="sidebar-footer">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token(request) }}">
+    <button class="logout-button" type="submit"><span>↪</span> Sign out</button>
+  </form>
+</aside>
+<header class="mobile-header">
+  <button type="button" class="menu-button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+  <span>Smriti Raj Dentistry</span>
 </header>
 {% endif %}
-<main class="container">
-{% if request.query_params.get("message") %}<div class="notice">{{ request.query_params.get("message") }}</div>{% endif %}
-{% block content %}{% endblock %}
+<main class="{% if request.session.get('user') %}app-main{% else %}login-main{% endif %}">
+  {% if request.query_params.get("message") %}<div class="notice">{{ request.query_params.get("message") }}</div>{% endif %}
+  {% block content %}{% endblock %}
 </main>
+<script src="/static/cursor.js"></script>
+<script src="/static/portal.js"></script>
 </body>
 </html>
