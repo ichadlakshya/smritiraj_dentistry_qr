@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -71,4 +71,3 @@ def redeem(request: Request, coupon_id: int):
         return RedirectResponse(f"/validate?token={coupon.secure_token}", status_code=303)
     finally:
         db.close()
-

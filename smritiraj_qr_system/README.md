@@ -131,6 +131,24 @@ Run:
 py -m pytest -q
 ```
 
+## Database migrations
+
+Local development may create SQLite tables automatically for convenience. Staging and production never create tables at application startup; apply Alembic migrations first:
+
+```powershell
+py -m alembic upgrade head
+```
+
+Check that the models and migrations agree:
+
+```powershell
+py -m alembic check
+```
+
+## Railway deployment preparation
+
+The repository includes a non-root production `Dockerfile`, PostgreSQL support, Alembic migrations, `/health` liveness, and `/ready` database readiness. Follow `docs/deployment-railway.md` when the deployment step is approved. Do not deploy with real patient data before the security, backup, pipeline, and launch gates pass.
+
 The test suite covers:
 - registration
 - QR token creation

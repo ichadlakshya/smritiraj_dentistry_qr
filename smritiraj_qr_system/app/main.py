@@ -1,12 +1,39 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
 from .database import Base, engine, SessionLocal
 from .models import Offer
-from .config import SESSION_MAX_AGE_SECONDS, SESSION_HTTPS_ONLY, SESSION_SECRET_KEY, validate_security_config
+from .config import APP_ENV, SESSION_MAX_AGE_SECONDS, SESSION_HTTPS_ONLY, SESSION_SECRET_KEY, validate_security_config
 
-app = FastAPI(title="Smriti Raj Dentistry - QR Offer Management System")
+
+def seed_default_offers() -> None:
+    db = SessionLocal()
+    try:
+        defaults = [
+            ("Free In-House Zirconia Crown", "Complimentary in-house zirconia crown campaign offer."),
+            ("Free In-House Aligner Scan", "Complimentary in-house aligner scan campaign offer."),
+        ]
+        for name, description in defaults:
+            if not db.query(Offer).filter(Offer.name == name).first():
+                db.add(Offer(name=name, description=description))
+        db.commit()
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    validate_security_config()
+    if APP_ENV != "production":
+        Base.metadata.create_all(bind=engine)
+    seed_default_offers()
+    yield
+
+app = FastAPI(title="Smriti Raj Dentistry - QR Offer Management System", lifespan=lifespan)
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET_KEY,
@@ -27,19 +54,16 @@ app.include_router(patients.router)
 app.include_router(coupons.router)
 app.include_router(validation.router)
 
-@app.on_event("startup")
-def startup():
-    validate_security_config()
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+@app.get("/health", include_in_schema=False)
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/ready", include_in_schema=False)
+def ready():
     try:
-        defaults = [
-            ("Free In-House Zirconia Crown", "Complimentary in-house zirconia crown campaign offer."),
-            ("Free In-House Aligner Scan", "Complimentary in-house aligner scan campaign offer."),
-        ]
-        for name, description in defaults:
-            if not db.query(Offer).filter(Offer.name == name).first():
-                db.add(Offer(name=name, description=description))
-        db.commit()
-    finally:
-        db.close()
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return {"status": "ready"}
+    except Exception:
+        return JSONResponse({"status": "unavailable"}, status_code=503)

@@ -1,4 +1,4 @@
-﻿from app.routes.auth import _attempts
+from app.routes.auth import _attempts
 
 
 def test_login_rejects_wrong_credentials(client):
@@ -36,4 +36,3 @@ def test_login_is_rate_limited_after_repeated_failures(client):
     response = client.post("/login", data={"username": "smritiraj-clinic", "password": "wrong-password"})
     assert response.status_code == 429
     _attempts.clear()
-

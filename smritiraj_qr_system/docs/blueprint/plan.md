@@ -70,4 +70,6 @@ Run with at least two clinic devices and two staff members:
 
 ## Launch gate
 
-Do not load real patient data if authentication, CSRF, one-time redemption, HTTPS/network restriction, backup restoration, or safe error handling fails. If WhatsApp is unavailable, launch with email and printed/downloadable QR while clearly marking WhatsApp as unavailable.
+Do not load real patient data if authentication, CSRF, one-time redemption, HTTPS/network restriction, backup restoration, safe error handling, or the CI/CD deployment pipeline fails. Before production launch, explicitly notify the owner that the pipeline and launch checklist are ready and obtain confirmation to proceed. If WhatsApp is unavailable, launch with email and printed/downloadable QR while clearly marking WhatsApp as unavailable.
+
+Before launch, stop and review this gate with the user. A successful Railway deployment or passing unit tests alone is not approval to launch.

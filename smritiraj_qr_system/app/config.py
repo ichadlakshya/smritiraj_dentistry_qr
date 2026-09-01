@@ -6,6 +6,9 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'smritiraj.db'}")
+DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "5"))
+DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+DB_POOL_TIMEOUT_SECONDS = int(os.getenv("DB_POOL_TIMEOUT_SECONDS", "30"))
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 CLINIC_USERNAME = os.getenv("CLINIC_USERNAME", "smritiraj-clinic")
 CLINIC_PASSWORD_HASH = os.getenv("CLINIC_PASSWORD_HASH", "")
@@ -35,5 +38,11 @@ def validate_security_config() -> None:
         errors.append("SESSION_MAX_AGE_SECONDS must be at least 300")
     if APP_ENV == "production" and not SESSION_HTTPS_ONLY:
         errors.append("SESSION_HTTPS_ONLY must be true in production")
+    if APP_ENV == "production" and not DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg://")):
+        errors.append("DATABASE_URL must use PostgreSQL in production")
+    if APP_ENV == "production" and not PUBLIC_BASE_URL.startswith("https://"):
+        errors.append("PUBLIC_BASE_URL must use HTTPS in production")
+    if DB_POOL_SIZE < 1 or DB_MAX_OVERFLOW < 0 or DB_POOL_TIMEOUT_SECONDS < 1:
+        errors.append("Database pool settings must be positive")
     if errors:
         raise RuntimeError("Invalid security configuration: " + "; ".join(errors))
