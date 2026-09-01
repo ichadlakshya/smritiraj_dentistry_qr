@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block title %}Validate QR{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Scan / Validate QR</h1><p class="muted">Camera scanning is available on supported browsers; manual token is the reliable fallback.</p></div></div>
+<div class="grid2">
+<section class="card"><h2>Camera Scanner</h2><div id="reader"></div><p id="scan-status" class="muted">Allow camera access when prompted.</p></section>
+<section class="card"><h2>Enter QR Code / Token</h2><form method="post" action="/validate"><input id="token" name="token" value="{{ token }}" placeholder="SRD-..." required><button class="primary btn full">VALIDATE</button></form></section>
+</div>
+{% if result %}
+<section class="card result {{ result.kind|lower }}">
+{% if result.kind == 'VALID' %}
+<h2>✓ OFFER VALID</h2><p><b>Patient:</b> {{ result.coupon.patient.full_name }}</p><p><b>Offer:</b> {{ result.coupon.offer.name }}</p><p><b>Issued:</b> {{ result.coupon.created_at.strftime('%d %B %Y') }}</p><p><b>Expires:</b> {{ result.coupon.expires_at.strftime('%d %B %Y') }}</p><span class="badge active">ACTIVE</span>
+<form method="post" action="/redeem/{{ result.coupon.id }}" onsubmit="return confirm('Are you sure you want to redeem this offer? This action cannot be undone.')"><button class="danger btn">REDEEM OFFER</button></form>
+{% elif result.kind == 'REDEEMED' %}<h2>✕ OFFER ALREADY USED</h2><p><b>Patient:</b> {{ result.coupon.patient.full_name }}</p><p><b>Offer:</b> {{ result.coupon.offer.name }}</p><p><b>Redeemed:</b> {{ result.coupon.redeemed_at.strftime('%d %B %Y %I:%M %p') }}</p><p>This QR cannot be used again.</p>
+{% elif result.kind == 'EXPIRED' %}<h2>✕ OFFER EXPIRED</h2><p>This QR was valid for 10 days.</p><p><b>Expiry:</b> {{ result.coupon.expires_at.strftime('%d %B %Y') }}</p><p>This offer can no longer be redeemed.</p>
+{% elif result.kind == 'CANCELLED' %}<h2>✕ OFFER CANCELLED</h2><p>This offer is no longer valid.</p>
+{% else %}<h2>✕ INVALID QR</h2><p>{{ result.message }}</p>{% endif %}
+</section>
+{% endif %}
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script>
+window.addEventListener('load', () => {
+  if (!window.Html5Qrcode) { document.getElementById('scan-status').textContent='Camera scanner library could not load. Use manual token entry.'; return; }
+  const scanner = new Html5Qrcode("reader");
+  scanner.start({facingMode:"environment"}, {fps:10, qrbox:{width:220,height:220}},
+    decoded => { document.getElementById('token').value=decoded; scanner.stop().catch(()=>{}); document.querySelector('form[action="/validate"]').submit(); },
+    () => {}
+  ).catch(err => { document.getElementById('scan-status').textContent='Camera unavailable. Use manual token entry.'; });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Offers{% endblock %}
+{% block content %}<div class="page-head"><div><h1>Offers</h1><p class="muted">All issued patient-specific QR offers</p></div></div>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>QR ID</th><th>Patient</th><th>Offer</th><th>Issued</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+{% for c in rows %}<tr><td>{{c.coupon_uid}}</td><td>{{c.patient.full_name}}</td><td>{{c.offer.name}}</td><td>{{c.created_at.strftime('%d %b %Y %I:%M %p')}}</td><td>{{c.expires_at.strftime('%d %b %Y %I:%M %p')}}</td><td><span class="badge {{c.status|lower}}">{{c.status}}</span></td><td><a href="/qr/{{c.coupon_uid}}/download">Download</a> · <a target="_blank" href="/qr/{{c.coupon_uid}}/print">Print</a></td></tr>{% else %}<tr><td colspan="7">No offers yet.</td></tr>{% endfor %}
+</tbody></table></div></section>{% endblock %}

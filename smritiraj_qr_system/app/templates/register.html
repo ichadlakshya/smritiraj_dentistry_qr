@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block title %}Register Patient{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Register Patient</h1><p class="muted">Create a unique 10-day, one-time-use offer.</p></div></div>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<form class="card form" method="post" action="/patients/register">
+<h2>Patient Information</h2>
+<div class="form-grid">
+<label>Full Name *<input name="full_name" required></label>
+<label>Mobile Number *<input name="mobile" required inputmode="tel"></label>
+<label>Email <input name="email" type="email"></label>
+<label>Age <input name="age" type="number" min="0" max="130"></label>
+<label>Gender <select name="gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+<label>City <input name="city"></label>
+<label>Referring Doctor / Doctor Name <input name="doctor_name"></label>
+<label>Campaign Name <input name="campaign_name"></label>
+</div>
+<h2>Offer Selection *</h2>
+<div class="offer-select">
+{% for o in offers %}<label class="offer-option"><input type="radio" name="offer_id" value="{{ o.id }}" required><span><b>{{ o.name }}</b><small>{{ o.description }}</small></span></label>{% endfor %}
+</div>
+<div class="form-footer"><a class="btn secondary" href="/">Cancel</a><button class="primary btn">REGISTER PATIENT & GENERATE QR</button></div>
+</form>
+{% endblock %}

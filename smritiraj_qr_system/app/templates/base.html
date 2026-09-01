@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Smriti Raj Dentistry{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{% if request.session.get("user") %}
+<header class="topbar">
+  <div class="brand">SMRITI RAJ <span>DENTISTRY</span></div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/patients">Patients</a>
+    <a href="/offers">Offers</a>
+    <a href="/validate">Scan / Validate QR</a>
+    <form method="post" action="/logout" class="inline"><button class="linkbtn">Logout</button></form>
+  </nav>
+</header>
+{% endif %}
+<main class="container">
+{% if request.query_params.get("message") %}<div class="notice">{{ request.query_params.get("message") }}</div>{% endif %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

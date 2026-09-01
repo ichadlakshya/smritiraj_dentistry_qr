@@ -1,0 +1,39 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'smritiraj.db'}")
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+CLINIC_USERNAME = os.getenv("CLINIC_USERNAME", "smritiraj-clinic")
+CLINIC_PASSWORD_HASH = os.getenv("CLINIC_PASSWORD_HASH", "")
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "")
+SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", "1800"))
+SESSION_HTTPS_ONLY = os.getenv("SESSION_HTTPS_ONLY", "false").lower() == "true"
+SESSION_VERSION = os.getenv("SESSION_VERSION", "1")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "")
+WHATSAPP_ENABLED = os.getenv("WHATSAPP_ENABLED", "false").lower() == "true"
+WHATSAPP_API_TOKEN = os.getenv("WHATSAPP_API_TOKEN", "")
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+QR_DIR = BASE_DIR / "generated_qr"
+QR_DIR.mkdir(exist_ok=True)
+
+def validate_security_config() -> None:
+    errors = []
+    if not CLINIC_PASSWORD_HASH.startswith("$argon2"):
+        errors.append("CLINIC_PASSWORD_HASH must contain an Argon2 password hash")
+    if len(SESSION_SECRET_KEY) < 32:
+        errors.append("SESSION_SECRET_KEY must be at least 32 characters")
+    if SESSION_MAX_AGE_SECONDS < 300:
+        errors.append("SESSION_MAX_AGE_SECONDS must be at least 300")
+    if APP_ENV == "production" and not SESSION_HTTPS_ONLY:
+        errors.append("SESSION_HTTPS_ONLY must be true in production")
+    if errors:
+        raise RuntimeError("Invalid security configuration: " + "; ".join(errors))

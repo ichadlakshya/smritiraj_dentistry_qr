@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Login{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="card login-card">
+    <div class="logo-mark">SRD</div>
+    <h1>Smriti Raj Dentistry</h1>
+    <p class="muted">Centralized Clinic Login</p>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="post" action="/login">
+      <label for="username">Clinic username</label>
+      <input id="username" type="text" name="username" autocomplete="username" required autofocus>
+      <label for="password">Clinic password</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required>
+      <button class="primary full">Login</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

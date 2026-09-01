@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Patients{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Patients</h1></div><a class="primary btn" href="/patients/register">+ Register Patient</a></div>
+<form class="filters card"><input name="q" value="{{ q }}" placeholder="Search name or mobile"><select name="status"><option value="">All statuses</option>{% for x in ['ACTIVE','REDEEMED','EXPIRED','CANCELLED'] %}<option value="{{x}}" {% if status==x %}selected{% endif %}>{{x}}</option>{% endfor %}</select><select name="offer_id"><option value="">All offers</option>{% for o in offers %}<option value="{{o.id}}" {% if offer_id==o.id %}selected{% endif %}>{{o.name}}</option>{% endfor %}</select><button class="btn secondary">Filter</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Patient ID</th><th>Name</th><th>Mobile</th><th>Offer</th><th>Registration</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+{% for c in rows %}<tr><td>{{ c.patient.patient_uid }}</td><td>{{ c.patient.full_name }}</td><td>{{ c.patient.mobile }}</td><td>{{ c.offer.name }}</td><td>{{ c.created_at.strftime('%d %b %Y') }}</td><td>{{ c.expires_at.strftime('%d %b %Y') }}</td><td><span class="badge {{c.status|lower}}">{{c.status}}</span></td><td><a href="/patients/{{c.patient.id}}">View</a> · <a href="/validate?token={{c.secure_token}}">Validate</a></td></tr>{% else %}<tr><td colspan="8">No patients found.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

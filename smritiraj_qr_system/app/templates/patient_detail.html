@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Patient Detail{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Patient Registered Successfully ✓</h1><p class="muted">Patient-specific offer</p></div><a class="secondary btn" href="/patients">Back to Patients</a></div>
+<div class="detail-grid">
+<section class="card"><h2>Patient Information</h2>
+<dl><dt>Patient ID</dt><dd>{{ patient.patient_uid }}</dd><dt>Name</dt><dd>{{ patient.full_name }}</dd><dt>Mobile</dt><dd>{{ patient.mobile }}</dd><dt>Email</dt><dd>{{ patient.email or '—' }}</dd><dt>Age</dt><dd>{{ patient.age or '—' }}</dd><dt>Gender</dt><dd>{{ patient.gender or '—' }}</dd><dt>City</dt><dd>{{ patient.city or '—' }}</dd><dt>Doctor</dt><dd>{{ patient.doctor_name or '—' }}</dd><dt>Campaign</dt><dd>{{ patient.campaign_name or '—' }}</dd></dl></section>
+<section class="card qr-card">
+{% if coupon %}<img src="/qr/{{ coupon.coupon_uid }}.png" class="qr">
+<h2>{{ coupon.offer.name }}</h2><p><b>QR ID:</b> {{ coupon.coupon_uid }}</p><p><b>Issued:</b> {{ coupon.created_at.strftime('%d %B %Y') }}</p><p><b>Valid Until:</b> {{ coupon.expires_at.strftime('%d %B %Y') }}</p><p><span class="badge {{ coupon.status|lower }}">{{ coupon.status }}</span></p>
+<div class="actions"><a class="btn primary" href="/qr/{{ coupon.coupon_uid }}/download">Download QR</a><a class="btn secondary" target="_blank" href="/qr/{{ coupon.coupon_uid }}/print">Print QR</a><a class="btn secondary" href="/validate?token={{ coupon.secure_token }}">Validate</a></div>
+<div class="delivery"><h3>Delivery Options</h3>
+{% if patient.email %}<form method="post" action="/patients/{{ patient.id }}/delivery/email"><button class="btn secondary">Send / Prepare Email</button></form>{% endif %}
+<form method="post" action="/patients/{{ patient.id }}/delivery/whatsapp"><button class="btn secondary">WhatsApp Prototype</button></form>
+</div>{% endif %}
+</section>
+</div>
+{% endblock %}

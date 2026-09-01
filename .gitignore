@@ -1,0 +1,4 @@
+.venv/
+smritiraj_qr_system/.env
+smritiraj_qr_system/.pytest_cache/
+smritiraj_qr_system/*.db
