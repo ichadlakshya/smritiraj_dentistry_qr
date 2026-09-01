@@ -12,6 +12,8 @@
 - Launch requirement: create and verify a CI/CD deployment pipeline before production launch
 - Communication requirement: explicitly tell the owner when the pipeline is ready and before launching the production system
 - Authentication: one centralized clinic login; no individual doctor accounts
+- Delivery order: complete and stabilize the centralized clinic system before building the separate admin panel
+- Admin direction: a separate `/admin` dashboard will be built only after the centralized operational workflow is complete
 - Offers currently identified:
   - Free In-House Zirconia Crown
   - Free In-House Aligner Scan
@@ -73,4 +75,5 @@ Before launching, remind the user to verify:
 - 1 September 2026: Pre-development blueprint created.
 - 1 September 2026: Railway selected for hosting; Sunday workload confirmed at approximately 500 registrations.
 - 1 September 2026: CI/CD pipeline and explicit pre-launch notification made mandatory launch gates.
+- 2 September 2026: Separate admin panel deferred until the centralized clinic system is complete.
 - 1 September 2026: Railway selected for hosting with an expected load of about 500 registrations per week.

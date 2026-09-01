@@ -4,10 +4,12 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from .database import Base, engine, SessionLocal
 from .models import Offer
-from .config import APP_ENV, SESSION_MAX_AGE_SECONDS, SESSION_HTTPS_ONLY, SESSION_SECRET_KEY, validate_security_config
+from .config import ALLOWED_HOSTS, APP_ENV, SESSION_MAX_AGE_SECONDS, SESSION_HTTPS_ONLY, SESSION_SECRET_KEY, validate_security_config
+from .security import SecurityHeadersMiddleware, get_csrf_token
 
 
 def seed_default_offers() -> None:
@@ -34,6 +36,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 app = FastAPI(title="Smriti Raj Dentistry - QR Offer Management System", lifespan=lifespan)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET_KEY,
@@ -42,8 +45,10 @@ app.add_middleware(
     same_site="lax",
     https_only=SESSION_HTTPS_ONLY,
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+templates.env.globals["csrf_token"] = get_csrf_token
 app.state.templates = templates
 app.state.db = SessionLocal
 

@@ -7,6 +7,7 @@
     <p class="muted">Centralized Clinic Login</p>
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
     <form method="post" action="/login">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token(request) }}">
       <label for="username">Clinic username</label>
       <input id="username" type="text" name="username" autocomplete="username" required autofocus>
       <label for="password">Clinic password</label>

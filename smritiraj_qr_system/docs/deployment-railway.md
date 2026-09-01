@@ -30,6 +30,7 @@ SESSION_SECRET_KEY=<generated random secret>
 SESSION_MAX_AGE_SECONDS=1800
 SESSION_HTTPS_ONLY=true
 SESSION_VERSION=1
+ALLOWED_HOSTS=<final domain>,healthcheck.railway.app
 DATABASE_URL=<reference to the private Railway PostgreSQL DATABASE_URL>
 DB_POOL_SIZE=5
 DB_MAX_OVERFLOW=10

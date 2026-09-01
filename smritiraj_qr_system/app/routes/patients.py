@@ -1,14 +1,23 @@
-from datetime import datetime
-from fastapi import APIRouter, Request, Form, Query
+from datetime import datetime, timedelta
+import logging
+from fastapi import APIRouter, Depends, Request, Form, Query
 from fastapi.responses import RedirectResponse
+from pydantic import ValidationError
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from ..auth import require_auth
-from ..models import Patient, PatientOffer, Offer, DeliveryLog
+from ..models import Patient, PatientOffer, Offer, DeliveryLog, AuditLog
 from ..schemas import PatientCreate
-from ..qr_service import new_token, new_uid, expiry_for, generate_qr
+from ..qr_service import new_uid, expiry_for, generate_qr, token_for, token_hash
 from ..audit_service import audit
+from ..security import require_csrf
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+CONSENT_VERSION = "2026-09-02"
+
+def sunday_for(moment: datetime):
+    return (moment - timedelta(days=(moment.weekday() + 1) % 7)).date()
 
 @router.get("/patients")
 def patients(request: Request, q: str = Query("", max_length=100), status: str = "", offer_id: int | None = None):
@@ -54,49 +63,91 @@ def register_patient(
     doctor_name: str = Form(""),
     campaign_name: str = Form(""),
     offer_id: int = Form(...),
+    consent_given: bool = Form(False),
+    _csrf: None = Depends(require_csrf),
 ):
     guard = require_auth(request)
     if guard: return guard
     db = request.app.state.db()
     try:
-        offer = db.get(Offer, offer_id)
+        try:
+            form = PatientCreate(
+                full_name=full_name,
+                mobile=mobile,
+                email=email or None,
+                age=age or None,
+                gender=gender or None,
+                city=city or None,
+                doctor_name=doctor_name or None,
+                campaign_name=campaign_name or None,
+                offer_id=offer_id,
+                consent_given=consent_given,
+            )
+        except ValidationError as exc:
+            first_error = exc.errors(include_url=False)[0]
+            field = str(first_error.get("loc", ["field"])[-1]).replace("_", " ").title()
+            raise ValueError(f"{field}: {first_error['msg']}") from None
+        offer = db.get(Offer, form.offer_id)
         if not offer:
             raise ValueError("Please select a valid offer.")
+        if not form.consent_given:
+            raise ValueError("Patient consent is required before registration.")
         now = datetime.utcnow()
+        registration_week = sunday_for(now)
+        duplicate = db.query(Patient).filter(
+            Patient.mobile == form.mobile,
+            Patient.registration_week == registration_week,
+        ).first()
+        if duplicate:
+            raise ValueError("This mobile number is already registered for the current Sunday-to-Saturday campaign week.")
         patient = Patient(
             patient_uid=new_uid("PAT"),
-            full_name=full_name.strip(),
-            mobile=mobile.strip(),
-            email=email.strip() or None,
-            age=int(age) if age.strip() else None,
-            gender=gender.strip() or None,
-            city=city.strip() or None,
-            doctor_name=doctor_name.strip() or None,
-            campaign_name=campaign_name.strip() or None,
+            full_name=form.full_name,
+            mobile=form.mobile,
+            email=str(form.email) if form.email else None,
+            age=form.age,
+            gender=form.gender,
+            city=form.city,
+            doctor_name=form.doctor_name,
+            campaign_name=form.campaign_name,
+            registration_week=registration_week,
+            consent_given=True,
+            consent_version=CONSENT_VERSION,
+            consented_at=now,
             created_at=now,
         )
         db.add(patient)
         db.flush()
+        coupon_uid = new_uid("SRD")
+        token = token_for(coupon_uid)
         coupon = PatientOffer(
-            coupon_uid=new_uid("SRD"),
+            coupon_uid=coupon_uid,
             patient_id=patient.id,
             offer_id=offer.id,
-            secure_token=new_token(),
+            secure_token_hash=token_hash(token),
             created_at=now,
             expires_at=expiry_for(now),
             status="ACTIVE",
         )
         db.add(coupon)
         db.flush()
-        generate_qr(coupon.secure_token, coupon.coupon_uid)
-        audit(db, "admin", "PATIENT_REGISTERED", coupon.id, patient.id, {"offer": offer.name})
+        generate_qr(token, coupon.coupon_uid)
+        audit(db, request.session.get("user", "admin"), "PATIENT_REGISTERED", coupon.id, patient.id, {
+            "offer": offer.name, "registration_week": str(registration_week), "consent_version": CONSENT_VERSION
+        })
         audit(db, "admin", "QR_GENERATED", coupon.id, patient.id)
         db.commit()
         return RedirectResponse(f"/patients/{patient.id}", status_code=303)
-    except Exception as e:
+    except (ValueError, IntegrityError) as exc:
         db.rollback()
         offers = db.query(Offer).order_by(Offer.id).all()
-        return request.app.state.templates.TemplateResponse("register.html", {"request": request, "offers": offers, "error": str(e)})
+        message = str(exc) if isinstance(exc, ValueError) else "This mobile number is already registered for the current campaign week."
+        return request.app.state.templates.TemplateResponse("register.html", {"request": request, "offers": offers, "error": message}, status_code=422)
+    except Exception:
+        logger.exception("Patient registration failed")
+        db.rollback()
+        offers = db.query(Offer).order_by(Offer.id).all()
+        return request.app.state.templates.TemplateResponse("register.html", {"request": request, "offers": offers, "error": "Registration could not be completed. Please try again."}, status_code=500)
     finally:
         db.close()
 
@@ -109,13 +160,42 @@ def patient_detail(request: Request, patient_id: int):
         patient = db.get(Patient, patient_id)
         if not patient:
             return RedirectResponse("/patients", status_code=303)
-        coupon = patient.offers[0] if patient.offers else None
-        return request.app.state.templates.TemplateResponse("patient_detail.html", {"request": request, "patient": patient, "coupon": coupon})
+        coupon = max(patient.offers, key=lambda item: item.created_at) if patient.offers else None
+        events = db.query(AuditLog).filter(AuditLog.patient_id == patient.id).order_by(AuditLog.timestamp.desc()).all()
+        return request.app.state.templates.TemplateResponse("patient_detail.html", {"request": request, "patient": patient, "coupon": coupon, "events": events})
+    finally:
+        db.close()
+
+@router.post("/patients/{patient_id}/cancel")
+def cancel_coupon(
+    request: Request,
+    patient_id: int,
+    reason: str = Form(..., min_length=3, max_length=255),
+    _csrf: None = Depends(require_csrf),
+):
+    guard = require_auth(request)
+    if guard: return guard
+    db = request.app.state.db()
+    try:
+        patient = db.get(Patient, patient_id)
+        if not patient or not patient.offers:
+            return RedirectResponse("/patients", status_code=303)
+        coupon = max(patient.offers, key=lambda item: item.created_at)
+        if coupon.status != "ACTIVE":
+            return RedirectResponse(f"/patients/{patient_id}?message=Only active offers can be cancelled", status_code=303)
+        now = datetime.utcnow()
+        coupon.status = "CANCELLED"
+        coupon.cancelled_at = now
+        coupon.cancelled_by = request.session.get("user", "admin")
+        coupon.cancellation_reason = " ".join(reason.split())
+        audit(db, coupon.cancelled_by, "QR_CANCELLED", coupon.id, patient.id, {"reason": coupon.cancellation_reason})
+        db.commit()
+        return RedirectResponse(f"/patients/{patient_id}?message=Offer cancelled", status_code=303)
     finally:
         db.close()
 
 @router.post("/patients/{patient_id}/delivery/email")
-def send_email(request: Request, patient_id: int):
+def send_email(request: Request, patient_id: int, _csrf: None = Depends(require_csrf)):
     guard = require_auth(request)
     if guard: return guard
     from ..email_service import prepare_email
@@ -136,7 +216,7 @@ def send_email(request: Request, patient_id: int):
         db.close()
 
 @router.post("/patients/{patient_id}/delivery/whatsapp")
-def whatsapp(request: Request, patient_id: int):
+def whatsapp(request: Request, patient_id: int, _csrf: None = Depends(require_csrf)):
     guard = require_auth(request)
     if guard: return guard
     from ..whatsapp_service import prepare_whatsapp

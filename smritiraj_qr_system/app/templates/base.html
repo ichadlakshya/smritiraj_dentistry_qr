@@ -15,7 +15,7 @@
     <a href="/patients">Patients</a>
     <a href="/offers">Offers</a>
     <a href="/validate">Scan / Validate QR</a>
-    <form method="post" action="/logout" class="inline"><button class="linkbtn">Logout</button></form>
+    <form method="post" action="/logout" class="inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token(request) }}"><button class="linkbtn">Logout</button></form>
   </nav>
 </header>
 {% endif %}

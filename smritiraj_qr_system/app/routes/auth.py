@@ -1,10 +1,11 @@
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from threading import Lock
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse
 from ..config import SESSION_VERSION
 from ..auth import SESSION_USER, verify_credentials
+from ..security import require_csrf
 
 router = APIRouter()
 MAX_LOGIN_ATTEMPTS = 5
@@ -40,7 +41,7 @@ def login_page(request: Request):
     )
 
 @router.post("/login")
-def login(request: Request, username: str = Form(...), password: str = Form(...)):
+def login(request: Request, username: str = Form(...), password: str = Form(...), _csrf: None = Depends(require_csrf)):
     client_key = _client_key(request)
     if _is_rate_limited(client_key):
         return request.app.state.templates.TemplateResponse(
@@ -60,6 +61,6 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     )
 
 @router.post("/logout")
-def logout(request: Request):
+def logout(request: Request, _csrf: None = Depends(require_csrf)):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)

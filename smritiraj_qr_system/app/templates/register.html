@@ -3,6 +3,7 @@
 <div class="page-head"><div><h1>Register Patient</h1><p class="muted">Create a unique 10-day, one-time-use offer.</p></div></div>
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
 <form class="card form" method="post" action="/patients/register">
+<input type="hidden" name="_csrf_token" value="{{ csrf_token(request) }}">
 <h2>Patient Information</h2>
 <div class="form-grid">
 <label>Full Name *<input name="full_name" required></label>
@@ -18,6 +19,7 @@
 <div class="offer-select">
 {% for o in offers %}<label class="offer-option"><input type="radio" name="offer_id" value="{{ o.id }}" required><span><b>{{ o.name }}</b><small>{{ o.description }}</small></span></label>{% endfor %}
 </div>
+<label class="offer-option"><input type="checkbox" name="consent_given" value="true" required><span><b>Patient consent *</b><small>The patient agrees to receive this offer QR and related confirmation messages by the contact details provided.</small></span></label>
 <div class="form-footer"><a class="btn secondary" href="/">Cancel</a><button class="primary btn">REGISTER PATIENT & GENERATE QR</button></div>
 </form>
 {% endblock %}

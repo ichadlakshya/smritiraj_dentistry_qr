@@ -1,5 +1,5 @@
-from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Text, Index
+from datetime import date, datetime
+from sqlalchemy import Boolean, Date, String, Integer, DateTime, ForeignKey, Text, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
@@ -15,9 +15,17 @@ class Patient(Base):
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     doctor_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     campaign_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    registration_week: Mapped[date] = mapped_column(Date, index=True)
+    consent_given: Mapped[bool] = mapped_column(Boolean, default=False)
+    consent_version: Mapped[str] = mapped_column(String(20))
+    consented_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     offers = relationship("PatientOffer", back_populates="patient", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("mobile", "registration_week", name="uq_patient_mobile_registration_week"),
+    )
 
 class Offer(Base):
     __tablename__ = "offers"
@@ -33,12 +41,15 @@ class PatientOffer(Base):
     coupon_uid: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
     offer_id: Mapped[int] = mapped_column(ForeignKey("offers.id"), index=True)
-    secure_token: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    secure_token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
     redeemed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     redeemed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    cancellation_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     patient = relationship("Patient", back_populates="offers")
     offer = relationship("Offer", back_populates="patient_offers")
