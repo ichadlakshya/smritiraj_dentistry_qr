@@ -27,6 +27,12 @@ def test_valid_then_redeemed_then_second_attempt_fails(client):
 def test_invalid_token(client):
     assert "INVALID QR" in client.post("/validate", data={"token":"SRD-NOT-REAL"}).text
 
+def test_visible_qr_id_can_be_validated_by_authenticated_staff(client):
+    client.post("/patients/register", data=registration("Manual ID", "9999999985"))
+    db = SessionLocal(); coupon_uid = db.query(PatientOffer).first().coupon_uid; db.close()
+    response = client.post("/validate", data={"token": coupon_uid.lower()})
+    assert "OFFER VALID" in response.text
+
 def test_different_offers_are_stored(client):
     client.post("/patients/register", data=registration("Crown", "9999999991", "1"))
     client.post("/patients/register", data=registration("Aligner", "9999999992", "2"))

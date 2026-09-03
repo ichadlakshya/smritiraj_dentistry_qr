@@ -1,25 +1,21 @@
-{% extends "base.html" %}{% block title %}Register Patient{% endblock %}
+{% extends "base.html" %}{% block title %}Register Patient{% endblock %}{% block section_title %}New Registration{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Register Patient</h1><p class="muted">Create a unique 10-day, one-time-use offer.</p></div></div>
+<div class="page-head"><div><span class="eyebrow">NEW REGISTRATION</span><h1>Register a patient</h1><p class="muted">Enter patient details, record consent and generate a secure one-time QR offer.</p></div><a class="text-link" href="/patients">← Back to patients</a></div>
 {% if error %}<div class="error">{{ error }}</div>{% endif %}
-<form class="card form" method="post" action="/patients/register">
+<form class="registration-layout form" method="post" action="/patients/register">
 <input type="hidden" name="_csrf_token" value="{{ csrf_token(request) }}">
-<h2>Patient Information</h2>
-<div class="form-grid">
-<label>Full Name *<input name="full_name" required></label>
-<label>Mobile Number *<input name="mobile" required inputmode="tel"></label>
-<label>Email <input name="email" type="email"></label>
-<label>Age <input name="age" type="number" min="0" max="130"></label>
-<label>Gender <select name="gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
-<label>City <input name="city"></label>
-<label>Referring Doctor / Doctor Name <input name="doctor_name"></label>
-<label>Campaign Name <input name="campaign_name"></label>
-</div>
-<h2>Offer Selection *</h2>
-<div class="offer-select">
-{% for o in offers %}<label class="offer-option"><input type="radio" name="offer_id" value="{{ o.id }}" required><span><b>{{ o.name }}</b><small>{{ o.description }}</small></span></label>{% endfor %}
-</div>
-<label class="offer-option"><input type="checkbox" name="consent_given" value="true" required><span><b>Patient consent *</b><small>The patient agrees to receive this offer QR and related confirmation messages by the contact details provided.</small></span></label>
-<div class="form-footer"><a class="btn secondary" href="/">Cancel</a><button class="primary btn">REGISTER PATIENT & GENERATE QR</button></div>
+<div class="card registration-card"><div class="step-heading"><span>01</span><div><h2>Patient information</h2><p>Required details for this campaign registration.</p></div></div><div class="form-grid">
+<label class="span-2">Full name *<input name="full_name" placeholder="Patient's full name" required></label>
+<label>Mobile number *<input name="mobile" placeholder="10-digit mobile number" required inputmode="tel"></label>
+<label>Email address <input name="email" type="email" placeholder="patient@example.com"></label>
+<label>Age <input name="age" type="number" min="0" max="130" placeholder="Age"></label>
+<label>Gender <select name="gender"><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+<label>City <input name="city" placeholder="City"></label>
+<label>Doctor name <input name="doctor_name" placeholder="Referring doctor"></label>
+<label class="span-2">Campaign name <input name="campaign_name" placeholder="Optional campaign reference"></label>
+</div></div>
+<div><section class="card registration-card"><div class="step-heading"><span>02</span><div><h2>Select an offer</h2><p>One offer can be issued per registration.</p></div></div><div class="offer-select">{% for o in offers %}<label class="offer-option"><input type="radio" name="offer_id" value="{{ o.id }}" required><span class="offer-check">✓</span><span><b>{{ o.name }}</b><small>{{ o.description }}</small><em>Valid for 10 days · One-time use</em></span></label>{% endfor %}</div></section>
+<section class="card consent-card"><label><input type="checkbox" name="consent_given" value="true" required><span><b>Patient consent recorded *</b><small>The patient agrees to receive this QR offer and related confirmations using the contact details provided.</small></span></label></section>
+<div class="form-footer"><a class="btn secondary" href="/patients">Cancel</a><button class="primary btn">Register & generate QR →</button></div></div>
 </form>
 {% endblock %}

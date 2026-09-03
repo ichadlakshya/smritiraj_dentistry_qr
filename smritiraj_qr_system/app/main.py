@@ -11,6 +11,7 @@ from .database import Base, engine, SessionLocal
 from .models import Offer
 from .config import ALLOWED_HOSTS, APP_ENV, SESSION_MAX_AGE_SECONDS, SESSION_HTTPS_ONLY, SESSION_SECRET_KEY, validate_security_config
 from .security import SecurityHeadersMiddleware, get_csrf_token
+from .time_utils import format_clinic_time
 
 
 def seed_default_offers() -> None:
@@ -51,15 +52,17 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.globals["csrf_token"] = get_csrf_token
+templates.env.filters["clinic_time"] = format_clinic_time
 app.state.templates = templates
 app.state.db = SessionLocal
 
-from .routes import auth, dashboard, patients, coupons, validation
+from .routes import auth, dashboard, patients, coupons, validation, operations
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(patients.router)
 app.include_router(coupons.router)
 app.include_router(validation.router)
+app.include_router(operations.router)
 
 @app.get("/health", include_in_schema=False)
 def health():

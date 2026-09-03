@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -7,12 +8,22 @@ from ..models import PatientOffer
 from ..coupon_service import refresh_expiry, redeem_atomic
 from ..audit_service import audit
 from ..security import require_csrf
-from ..qr_service import token_hash
+from ..qr_service import token_for, token_hash
 
 router = APIRouter()
 
 def find_coupon(db, token):
-    return db.execute(select(PatientOffer).where(PatientOffer.secure_token_hash == token_hash(token))).scalar_one_or_none()
+    value = token.strip()
+    if re.fullmatch(r"SRD-[A-F0-9]{8}", value, re.IGNORECASE):
+        coupon = db.execute(
+            select(PatientOffer).where(PatientOffer.coupon_uid == value.upper())
+        ).scalar_one_or_none()
+        if coupon and coupon.secure_token_hash == token_hash(token_for(coupon.coupon_uid)):
+            return coupon
+        return None
+    return db.execute(
+        select(PatientOffer).where(PatientOffer.secure_token_hash == token_hash(value))
+    ).scalar_one_or_none()
 
 def result_for(coupon):
     if coupon.status == "REDEEMED": return {"kind": "REDEEMED", "coupon": coupon}

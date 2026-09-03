@@ -15,8 +15,18 @@ def test_static_frontend_assets_are_served(client):
 
 
 def test_authenticated_pages_share_integrated_layout(client):
-    for path in ("/", "/patients", "/patients/register", "/offers", "/validate"):
+    for path in ("/", "/patients", "/patients/register", "/offers", "/validate", "/redemptions", "/delivery"):
         response = client.get(path)
         assert response.status_code == 200
         assert "Dentistry Ops" in response.text
         assert "/static/cursor.js" in response.text
+
+
+def test_integrated_frontend_uses_real_backend_forms(client):
+    registration = client.get("/patients/register")
+    assert 'name="full_name"' in registration.text
+    assert 'name="offer_id"' in registration.text
+    assert 'name="consent_given"' in registration.text
+    scanner = client.get("/validate")
+    assert 'action="/validate"' in scanner.text
+    assert 'name="_csrf_token"' in scanner.text
