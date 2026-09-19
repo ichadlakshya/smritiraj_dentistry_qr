@@ -66,3 +66,4 @@ html,body{overflow-x:hidden;max-width:100%}
 
 /* Keep sidebar scrolling separate from the page content. */
 .sidebar{overflow-y:auto;overscroll-behavior:contain}
+.chart-loading[hidden],.empty-state[hidden],.chart-mode-btn[hidden],.analytics-chart[hidden]{display:none!important}

@@ -24,7 +24,7 @@
   const labels = [...new Set([...series.registrations.map(row => row.day), ...series.redemptions.map(row => row.day)])].sort();
   loading.hidden = true;
   if (!labels.length) { empty.hidden = false; return; }
-  chart.hidden = false;
+  chart.removeAttribute('hidden');
   barsBtn.hidden = false;
   lineBtn.hidden = false;
 
